@@ -1,6 +1,7 @@
 set(KERNELS_SOURCES
     cpu_naive.cpp
     gpu_naive.cu
+    gpu_tiled.cu
     registry.cpp
 )
 
