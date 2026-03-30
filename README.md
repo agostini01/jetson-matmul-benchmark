@@ -25,14 +25,20 @@ include/matmul/
 	harness.hpp
 	registry.hpp
 
-src/
+src/harness/
 	harness.cpp
+
+src/kernels/
 	registry.cpp
 	cpu_naive.cpp
 	cpu_optimized.cpp
 	gpu_naive.cu
 	gpu_tiled.cu
+
+tests/
 	test_main.cpp
+
+benchmarks/
 	benchmark_main.cpp
 
 .github/workflows/
@@ -42,36 +48,58 @@ src/
 
 ## Build
 
+Configure and build:
+
 ```
-make all
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
-The Makefile auto-detects OpenMP support. If available, it builds the optimized CPU version with OpenMP.
+CMake auto-detects OpenMP support. If available, it builds the optimized CPU version with OpenMP.
 
 ## Validation Test
 
 Runs correctness checks for all implementations against `cpu_naive` reference.
 
 ```
-make test TEST_SIZE=128
+cmake -B build -DTEST_SIZE=128
+cmake --build build --target test
+```
+
+Or after initial configuration:
+
+```
+cmake --build build --target test
 ```
 
 ## Benchmark
 
-Default benchmark configuration requested:
+Default benchmark configuration:
 
 - benchmark size: `1024`
 - validation size: `128`
 - warmup runs: `2`
 - timed runs: `10`
 
-Run:
+Configure and run:
 
 ```
-make benchmark BENCH_SIZE=1024 TEST_SIZE=128 WARMUP=2 RUNS=10 JSON=benchmark-results.json
+cmake -B build -DCMAKE_BUILD_TYPE=Release \
+  -DBENCH_SIZE=1024 \
+  -DTEST_SIZE=128 \
+  -DWARMUP_RUNS=2 \
+  -DTIMED_RUNS=10 \
+  -DJSON_OUTPUT=benchmark-results.json
+
+cmake --build build --target benchmark
 ```
 
-You can override values from command line with the variables above.
+Or after initial configuration, override parameters:
+
+```
+cmake -B build -DBENCH_SIZE=2048 -DTEST_SIZE=256
+cmake --build build --target benchmark
+```
 
 ## Output
 
@@ -82,6 +110,14 @@ benchmark-results.json
 ```
 
 This JSON includes config, per-implementation validation status, run times, and summary metrics (min/max/mean/stddev, GFLOPS).
+
+## Clean
+
+Remove build artifacts:
+
+```
+rm -rf build
+```
 
 ## Common Issues
 
