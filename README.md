@@ -48,6 +48,10 @@ benchmarks/
 	benchmark.yml 	# Manual workflow for benchmarks, uploads JSON artifact.
 ```
 
+## Devcontainer
+
+Development can be done inside the provided devcontainer, which is configured for CUDA development on Jetson devices. See `.devcontainer/devcontainer.json` and `.devcontainer/Dockerfile` for details.
+
 ## Build
 
 Configure and build:
