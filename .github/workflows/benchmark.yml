@@ -1,0 +1,50 @@
+name: Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      benchmark_size:
+        description: Matrix size for benchmark runs
+        required: true
+        default: "1024"
+      test_size:
+        description: Matrix size for validation checks
+        required: true
+        default: "128"
+      warmup:
+        description: Warmup runs per implementation
+        required: true
+        default: "2"
+      runs:
+        description: Timed runs per implementation
+        required: true
+        default: "10"
+
+jobs:
+  benchmark:
+    runs-on: [self-hosted, linux, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBENCH_SIZE=${{ github.event.inputs.benchmark_size }} \
+            -DTEST_SIZE=${{ github.event.inputs.test_size }} \
+            -DWARMUP_RUNS=${{ github.event.inputs.warmup }} \
+            -DTIMED_RUNS=${{ github.event.inputs.runs }} \
+            -DJSON_OUTPUT=benchmark-results.json
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run benchmark
+        run: cmake --build build --target benchmark
+
+      - name: Upload benchmark JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark-results.json
