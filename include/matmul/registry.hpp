@@ -1,0 +1,14 @@
+#pragma once
+
+#include <memory>
+#include <vector>
+
+#include "matmul/implementation.hpp"
+
+namespace matmul {
+
+std::unique_ptr<MatmulImplementation> make_cpu_naive();
+
+std::vector<std::unique_ptr<MatmulImplementation>> make_all_implementations();
+
+}  // namespace matmul
