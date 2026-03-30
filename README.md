@@ -22,16 +22,16 @@ It includes:
 
 ```
 include/matmul/
-	matrix.hpp
-	implementation.hpp
+	matrix.hpp 			# Common matrix definitions and utilities
+	implementation.hpp 	# Abstract base class for implementations
 	harness.hpp
 	registry.hpp
 
-src/harness/
+src/harness/ 		# Contains the benchmarking harness implementation
 	harness.cpp
 
-src/kernels/
-	registry.cpp
+src/kernels/ 		# Contains all implementations
+	registry.cpp 	# Registers implementations for dynamic selection
 	cpu_naive.cpp
 	cpu_optimized.cpp
 	gpu_naive.cu
@@ -41,11 +41,11 @@ tests/
 	test_main.cpp
 
 benchmarks/
-	benchmark_main.cpp
+	benchmark_main.cpp # Contains the benchmark driver that runs all implementations and outputs JSON
 
 .github/workflows/
-	ci-test.yml
-	benchmark.yml
+	ci-test.yml 	# Runs on push, executes build + validation tests.
+	benchmark.yml 	# Manual workflow for benchmarks, uploads JSON artifact.
 ```
 
 ## Build
