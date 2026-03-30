@@ -1,0 +1,14 @@
+{
+	"name": "cuda",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"runArgs": [
+		"--runtime=nvidia",
+		"--gpus",
+		"all",
+		"--rm",
+		"--network=host",
+		"--cap-add=SYS_ADMIN"
+	]
+}

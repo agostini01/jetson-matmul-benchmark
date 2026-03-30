@@ -83,6 +83,25 @@ benchmark-results.json
 
 This JSON includes config, per-implementation validation status, run times, and summary metrics (min/max/mean/stddev, GFLOPS).
 
+## Common Issues
+
+Devcontainer on jetson required `--runtime=nvidia` to access GPU. 
+
+As root, make sure your Docker daemon is configured with NVIDIA Container Runtime. For example, `/etc/docker/daemon.json` should include:
+
+```json
+{
+    "runtimes": {
+        "nvidia": {
+            "path": "nvidia-container-runtime",
+            "runtimeArgs": []
+        }
+    }
+}
+```
+
+Run `sudo systemctl restart docker` after making changes.
+
 ## GitHub Actions
 
 - `ci-test.yml`: runs on push/pull request and executes build + validation tests.
