@@ -1,5 +1,7 @@
 # Jetson MatMul Benchmark (CPU + CUDA)
 
+[![CI Test](https://github.com/agostini01/jetson-matmul-benchmark/actions/workflows/ci-test.yml/badge.svg?branch=main)](https://github.com/agostini01/jetson-matmul-benchmark/actions/workflows/ci-test.yml)
+
 This project benchmarks float32 matrix multiplication on:
 
 - CPU baseline (`cpu_naive`)
