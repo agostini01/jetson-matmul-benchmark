@@ -35,7 +35,7 @@ jobs:
             -DTEST_SIZE=${{ github.event.inputs.test_size }} \
             -DWARMUP_RUNS=${{ github.event.inputs.warmup }} \
             -DTIMED_RUNS=${{ github.event.inputs.runs }} \
-            -DJSON_OUTPUT=benchmark-results.json
+            -DJSON_OUTPUT=${{ github.workspace }}/benchmark-results.json
 
       - name: Build
         run: cmake --build build
@@ -47,4 +47,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
-          path: benchmark-results.json
+          path: ${{ github.workspace }}/benchmark-results.json

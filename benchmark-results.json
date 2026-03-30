@@ -1,0 +1,59 @@
+{
+  "config": {
+    "benchmark_size": 1024,
+    "validation_size": 128,
+    "warmup_runs": 2,
+    "timed_runs": 10,
+    "tolerance": 0.001000
+  },
+  "results": [
+    {
+      "name": "cpu_naive",
+      "optimized": false,
+      "validation_ok": true,
+      "validation_max_abs_diff": 0.000000,
+      "min_ms": 4347.067237,
+      "max_ms": 4446.498729,
+      "mean_ms": 4394.333558,
+      "stddev_ms": 27.206131,
+      "gflops": 0.488694,
+      "runs_ms": [4395.912944, 4399.310270, 4446.498729, 4398.797642, 4406.621833, 4385.105382, 4347.067237, 4351.158986, 4408.209081, 4404.653474]
+    },
+    {
+      "name": "cpu_optimized_openmp",
+      "optimized": true,
+      "validation_ok": true,
+      "validation_max_abs_diff": 0.000000,
+      "min_ms": 590.572588,
+      "max_ms": 692.818470,
+      "mean_ms": 622.782028,
+      "stddev_ms": 31.786753,
+      "gflops": 3.448211,
+      "runs_ms": [647.202637, 641.478706, 593.044733, 596.974558, 597.362218, 638.514896, 590.572588, 692.818470, 632.926138, 596.925340]
+    },
+    {
+      "name": "gpu_naive_cuda",
+      "optimized": false,
+      "validation_ok": true,
+      "validation_max_abs_diff": 0.000000,
+      "min_ms": 49.734719,
+      "max_ms": 67.969206,
+      "mean_ms": 54.319804,
+      "stddev_ms": 5.971301,
+      "gflops": 39.534083,
+      "runs_ms": [50.421750, 67.969206, 61.320891, 49.734719, 50.166670, 57.193844, 56.326871, 50.018441, 50.193647, 49.852003]
+    },
+    {
+      "name": "gpu_optimized_tiled_cuda",
+      "optimized": true,
+      "validation_ok": true,
+      "validation_max_abs_diff": 0.000000,
+      "min_ms": 33.684081,
+      "max_ms": 34.655057,
+      "mean_ms": 34.298187,
+      "stddev_ms": 0.258615,
+      "gflops": 62.612162,
+      "runs_ms": [34.409608, 34.384168, 34.430217, 34.262596, 33.684081, 34.198050, 34.593550, 34.655057, 34.153216, 34.211330]
+    }
+  ]
+}
