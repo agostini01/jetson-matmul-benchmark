@@ -15,4 +15,4 @@ std::unique_ptr<MatmulImplementation> make_gpu_tiled();
 
 std::vector<std::unique_ptr<MatmulImplementation>> make_all_implementations();
 
-}  // namespace matmul
+} // namespace matmul
