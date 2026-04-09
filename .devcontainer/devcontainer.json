@@ -10,5 +10,12 @@
 		"--rm",
 		"--network=host",
 		"--cap-add=SYS_ADMIN"
-	]
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools-extension-pack"
+			]
+		}
+	}
 }
