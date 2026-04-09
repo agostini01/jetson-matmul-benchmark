@@ -9,6 +9,7 @@ namespace matmul {
 
 std::unique_ptr<MatmulImplementation> make_cpu_naive();
 std::unique_ptr<MatmulImplementation> make_cpu_optimized();
+std::unique_ptr<MatmulImplementation> make_cpu_blas();
 std::unique_ptr<MatmulImplementation> make_gpu_naive();
 std::unique_ptr<MatmulImplementation> make_gpu_tiled();
 

@@ -6,6 +6,7 @@ This project benchmarks float32 matrix multiplication on:
 
 - CPU baseline (`cpu_naive`)
 - CPU optimized (`cpu_optimized_openmp` when OpenMP is available, otherwise tiled fallback)
+- CPU BLAS (`cpu_blas`) when BLAS is available
 - GPU baseline CUDA (`gpu_naive_cuda`)
 - GPU optimized CUDA tiled (`gpu_optimized_tiled_cuda`)
 
@@ -63,6 +64,8 @@ cmake --build build
 
 CMake auto-detects OpenMP support. If available, it builds the optimized CPU version with OpenMP.
 
+BLAS integration is enabled by default. The project prefers NVPL when available and falls back to generic BLAS discovery.
+
 ## Validation Test
 
 Runs correctness checks for all implementations against `cpu_naive` reference.
@@ -106,6 +109,22 @@ Or after initial configuration, override parameters:
 cmake -B build -DBENCH_SIZE=2048 -DTEST_SIZE=256
 cmake --build build --target benchmark
 ```
+
+Useful BLAS options:
+
+```
+# Default behavior: BLAS enabled, prefer NVPL first, fallback to generic BLAS
+cmake -B build -DMATMUL_USE_BLAS_BASELINE=ON -DMATMUL_PREFER_NVPL=ON
+
+# Disable BLAS integration entirely
+cmake -B build -DMATMUL_USE_BLAS_BASELINE=OFF
+```
+
+Benchmark reference behavior:
+
+- benchmark runner prefers `cpu_blas` as the validation reference when available
+- if `cpu_blas` is unavailable, it falls back to `cpu_naive`
+- tests still validate against `cpu_naive`
 
 ## Output
 
