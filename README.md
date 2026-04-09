@@ -62,6 +62,32 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
+## Format
+
+Format all C/C++/CUDA source files tracked by the project target list:
+
+```
+cmake -B build
+cmake --build build --target format
+```
+
+Check formatting without modifying files (useful in CI):
+
+```
+cmake -B build
+cmake --build build --target format-check
+```
+
+Optional pre-commit hook setup:
+
+```
+pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+This repository includes `.pre-commit-config.yaml` with a clang-format hook and a GitHub Action at `.github/workflows/format-check.yml`.
+
 CMake auto-detects OpenMP support. If available, it builds the optimized CPU version with OpenMP.
 
 BLAS integration is enabled by default. The project prefers NVPL when available and falls back to generic BLAS discovery.

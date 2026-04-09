@@ -18,11 +18,16 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && apt update \
     && apt install -y sudo \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
+    && chmod 0440 /etc/sudoers.d/$USERNAME \
+    && apt autoremove -y \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Cleanup
-# RUN pip3 cache purge # cache is not enabled in the nvcr image
-RUN apt autoremove -y \
-    && apt clean
+# Install additional OS packages and clean apt metadata in the same layer.
+RUN apt update \
+    && apt install -y --no-install-recommends clang-format \
+    && apt autoremove -y \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME

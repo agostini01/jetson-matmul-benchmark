@@ -89,6 +89,70 @@ add_subdirectory(src/kernels)
 add_subdirectory(tests)
 add_subdirectory(benchmarks)
 
+# Formatting targets
+find_program(CLANG_FORMAT_EXE NAMES clang-format clang-format-18 clang-format-17 clang-format-16)
+
+file(GLOB_RECURSE MATMUL_SRC_FILES CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/src/*.c
+    ${CMAKE_SOURCE_DIR}/src/*.cc
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/*.cuh
+    ${CMAKE_SOURCE_DIR}/src/*.cu
+    ${CMAKE_SOURCE_DIR}/src/*.h
+    ${CMAKE_SOURCE_DIR}/src/*.hpp
+)
+
+file(GLOB_RECURSE MATMUL_INCLUDE_FILES CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/include/*.h
+    ${CMAKE_SOURCE_DIR}/include/*.hpp
+)
+
+file(GLOB_RECURSE MATMUL_EXTRA_FILES CONFIGURE_DEPENDS
+    ${CMAKE_SOURCE_DIR}/tests/*.c
+    ${CMAKE_SOURCE_DIR}/tests/*.cc
+    ${CMAKE_SOURCE_DIR}/tests/*.cpp
+    ${CMAKE_SOURCE_DIR}/tests/*.h
+    ${CMAKE_SOURCE_DIR}/tests/*.hpp
+    ${CMAKE_SOURCE_DIR}/benchmarks/*.c
+    ${CMAKE_SOURCE_DIR}/benchmarks/*.cc
+    ${CMAKE_SOURCE_DIR}/benchmarks/*.cpp
+    ${CMAKE_SOURCE_DIR}/benchmarks/*.h
+    ${CMAKE_SOURCE_DIR}/benchmarks/*.hpp
+)
+
+set(MATMUL_FORMAT_FILES
+    ${MATMUL_SRC_FILES}
+    ${MATMUL_INCLUDE_FILES}
+    ${MATMUL_EXTRA_FILES}
+)
+
+list(REMOVE_DUPLICATES MATMUL_FORMAT_FILES)
+list(SORT MATMUL_FORMAT_FILES)
+
+if(CLANG_FORMAT_EXE)
+    add_custom_target(format
+        COMMAND ${CLANG_FORMAT_EXE} -i --style=file ${MATMUL_FORMAT_FILES}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Formatting source files with ${CLANG_FORMAT_EXE}"
+    )
+
+    add_custom_target(format-check
+        COMMAND ${CLANG_FORMAT_EXE} --dry-run --Werror --style=file ${MATMUL_FORMAT_FILES}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Checking formatting with ${CLANG_FORMAT_EXE}"
+    )
+else()
+    add_custom_target(format
+        COMMAND ${CMAKE_COMMAND} -E echo "clang-format was not found. Install clang-format to use this target."
+        COMMAND ${CMAKE_COMMAND} -E false
+    )
+
+    add_custom_target(format-check
+        COMMAND ${CMAKE_COMMAND} -E echo "clang-format was not found. Install clang-format to use this target."
+        COMMAND ${CMAKE_COMMAND} -E false
+    )
+endif()
+
 # Custom targets that mimic Makefile behavior
 add_custom_target(test
     COMMAND test_matmul --size ${TEST_SIZE}

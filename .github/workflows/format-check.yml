@@ -1,0 +1,42 @@
+name: Format Check
+
+on:
+  # pull_request:
+  #   paths:
+  #     - 'src/**'
+  #     - 'include/**'
+  #     - 'tests/**'
+  #     - 'benchmarks/**'
+  #     - '.clang-format'
+  #     - 'CMakeLists.txt'
+  #     - '.github/workflows/format-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'tests/**'
+      - 'benchmarks/**'
+      - '.clang-format'
+      - 'CMakeLists.txt'
+      - '.github/workflows/format-check.yml'
+
+jobs:
+  clang-format:
+    runs-on: [self-hosted, linux, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure clang-format is installed
+        run: |
+          if ! command -v clang-format >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y clang-format
+          fi
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Check formatting
+        run: cmake --build build --target format-check
