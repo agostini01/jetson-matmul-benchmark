@@ -28,6 +28,7 @@ RUN apt update \
     && apt install -y --no-install-recommends clang-format \
     && apt autoremove -y \
     && apt clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/clang-format-14 /usr/bin/clang-format
 
 USER $USERNAME
