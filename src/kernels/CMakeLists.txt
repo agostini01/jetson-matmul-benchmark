@@ -3,6 +3,8 @@ set(KERNELS_SOURCES
     cpu_optimized.cpp
     gpu_naive.cu
     gpu_tiled.cu
+    gpu_cub.cu
+    gpu_cublas.cu
     registry.cpp
 )
 
@@ -12,7 +14,7 @@ endif()
 
 add_library(matmul_kernels ${KERNELS_SOURCES})
 target_include_directories(matmul_kernels PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(matmul_kernels PUBLIC matmul_harness CUDA::cudart)
+target_link_libraries(matmul_kernels PUBLIC matmul_harness CUDA::cudart CUDA::cublas)
 
 if(MATMUL_ENABLE_BLAS)
     target_compile_definitions(matmul_kernels PUBLIC MATMUL_ENABLE_BLAS)

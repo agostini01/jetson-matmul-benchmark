@@ -1,5 +1,6 @@
 #include "matmul/implementation.hpp"
 
+#include <cublas_v2.h>
 #include <cuda_runtime.h>
 
 #include <memory>
@@ -14,6 +15,12 @@ inline void check_cuda(cudaError_t status, const char *context) {
   if (status != cudaSuccess) {
     throw std::runtime_error(std::string(context) + ": " +
                              cudaGetErrorString(status));
+  }
+}
+
+inline void check_cublas(cublasStatus_t status, const char *context) {
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    throw std::runtime_error(std::string(context) + ": cuBLAS error");
   }
 }
 
@@ -32,27 +39,22 @@ template <typename T> std::shared_ptr<T> make_cuda_shared(size_t count) {
   });
 }
 
-__global__ void matmul_naive_kernel(const float *a, const float *b, float *c,
-                                    int n) {
-  const int row = blockIdx.y * blockDim.y + threadIdx.y;
-  const int col = blockIdx.x * blockDim.x + threadIdx.x;
-  if (row >= n || col >= n) {
-    return;
-  }
-
-  float acc = 0.0f;
-  for (int k = 0; k < n; ++k) {
-    acc += a[row * n + k] * b[k * n + col];
-  }
-  c[row * n + col] = acc;
-}
-
 } // namespace
 
-class GpuNaiveMatmul final : public MatmulImplementation {
+class GpuCublasMatmul final : public MatmulImplementation {
 public:
-  const char *name() const override { return "gpu_naive_cuda"; }
-  bool is_optimized() const override { return false; }
+  GpuCublasMatmul() : handle_(nullptr) {
+    check_cublas(cublasCreate(&handle_), "Failed to create cuBLAS handle");
+  }
+
+  ~GpuCublasMatmul() {
+    if (handle_) {
+      cublasDestroy(handle_);
+    }
+  }
+
+  const char *name() const override { return "gpu_cublas"; }
+  bool is_optimized() const override { return true; }
 
   void multiply(const Matrix &a, const Matrix &b, Matrix &c) override {
     const int n = static_cast<int>(a.size());
@@ -68,19 +70,27 @@ public:
     check_cuda(cudaMemcpy(d_b.get(), b.data(), bytes, cudaMemcpyHostToDevice),
                "cudaMemcpy b->d_b");
 
-    const dim3 block(16, 16);
-    const dim3 grid((n + block.x - 1) / block.x, (n + block.y - 1) / block.y);
-    matmul_naive_kernel<<<grid, block>>>(d_a.get(), d_b.get(), d_c.get(), n);
-    check_cuda(cudaGetLastError(), "launch matmul_naive_kernel");
-    check_cuda(cudaDeviceSynchronize(), "sync matmul_naive_kernel");
+    // Matrix stores row-major data, but cuBLAS interprets buffers as
+    // column-major. Swapping the operands computes (B * A) in column-major,
+    // which maps back to the desired row-major result A * B in the output
+    // buffer.
+    const float alpha = 1.0f;
+    const float beta = 0.0f;
+
+    check_cublas(cublasSgemm(handle_, CUBLAS_OP_N, CUBLAS_OP_N, n, n, n, &alpha,
+                             d_b.get(), n, d_a.get(), n, &beta, d_c.get(), n),
+                 "cublasSgemm failed");
 
     check_cuda(cudaMemcpy(c.data(), d_c.get(), bytes, cudaMemcpyDeviceToHost),
                "cudaMemcpy d_c->c");
   }
+
+private:
+  cublasHandle_t handle_;
 };
 
-std::unique_ptr<MatmulImplementation> make_gpu_naive() {
-  return std::make_unique<GpuNaiveMatmul>();
+std::unique_ptr<MatmulImplementation> make_gpu_cublas() {
+  return std::make_unique<GpuCublasMatmul>();
 }
 
 } // namespace matmul
