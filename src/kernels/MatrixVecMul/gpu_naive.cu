@@ -32,7 +32,7 @@ __global__ void matvecmul(const float *m, const float *v,
                           float *o const int n) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  // How many elements in the grid
+  // How many threads available in the grid
   int stride = gridDim.x * blockDim.x;
 
   // Calculate the dot product
@@ -63,20 +63,32 @@ void matvecmul(const float *m, const float *v, float *o, int n) {
       "Failed to copy vector to device");
 
   // Launch kernel
-  cudaDeviceProp prop;
-  cudaGetDeviceProperties(&prop, 0);
-
-  int maxThreadsPerBlock = prop.maxThreadsPerBlock;       // 1024
-  int maxThreadsPerSM = prop.maxThreadsPerMultiProcessor; // e.g., 2048
-  int numSMs = prop.multiProcessorCount;                  // e.g., 128
+  int device_id;
+  int num_SMs;
+  cudaGetDevice(&device_id);
+  cuda_check(cudaDeviceGetAttribute(&num_SMs, cudaDevAttrMultiProcessorCount,
+                                    device_id));
   int block_size = 256;
-  int MAXNUMTHREADS = maxThreadsPerSM * numSMs;
-  int grid_size =
-      min((n + block_size - 1) / block_size, MAXNUMTHREADS / block_size);
+  int blocks_per_SM = 32;
+
+  // We could use occupancy API to calculate the optimal grid size, but since we
+  // are using a grid-stride loop, we can just launch enough blocks to cover all
+  // rows, up to a maximum of num_SMs * blocks_per_SM
+
+  // int max_blocks_per_SM;
+  // cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM,
+  //                                               matvecmul,
+  //                                               block_size, 0);
+  int blocks_needed = (n + block_size - 1) / block_size;
+  // Since we are using a grid-stride we limit the total number of threads
+  int grid_size = min(num_SMs * blocks_per_SM, blocks_needed);
   matvecmul<<<grid_size, block_size>>>(m, v, o, n);
   cuda_check(cudaGetLastError(), "launch kernel");
-  cuda_check(cudaDeviceSynchronize(), "sync matvecmul")
+  cuda_check(cudaDeviceSynchronize(), "sync matvecmul");
 
-      cuda_check(
-          cudaMemcpy(o, d_o.get(), n * sizeof(float), cudaMemcpyDeviceToHost));
+  // Copy result back to host
+  cuda_check(
+      cudaMemcpy(o, d_o.get(), n * sizeof(float), cudaMemcpyDeviceToHost));
+}
+
 } // namespace matvecmul
