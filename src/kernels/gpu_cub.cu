@@ -1,21 +1,14 @@
 #include "matmul/implementation.hpp"
+#include "utils/utils.h"
 
 #include <cub/cub.cuh>
 #include <cuda_runtime.h>
 
 #include <memory>
-#include <stdexcept>
-#include <string>
 
+using namespace utils;
 namespace matmul {
 namespace {
-
-inline void check_cuda(cudaError_t status, const char *context) {
-  if (status != cudaSuccess) {
-    throw std::runtime_error(std::string(context) + ": " +
-                             cudaGetErrorString(status));
-  }
-}
 
 constexpr int BLOCK_THREADS = 128;
 constexpr int TILE = 16;
@@ -81,32 +74,24 @@ public:
     const std::size_t bytes = static_cast<std::size_t>(n) *
                               static_cast<std::size_t>(n) * sizeof(float);
 
-    float *d_a = nullptr;
-    float *d_b = nullptr;
-    float *d_c = nullptr;
+    std::shared_ptr<float> d_a = makeCudaShared<float>(n * n);
+    std::shared_ptr<float> d_b = makeCudaShared<float>(n * n);
+    std::shared_ptr<float> d_c = makeCudaShared<float>(n * n);
 
-    check_cuda(cudaMalloc(&d_a, bytes), "cudaMalloc d_a");
-    check_cuda(cudaMalloc(&d_b, bytes), "cudaMalloc d_b");
-    check_cuda(cudaMalloc(&d_c, bytes), "cudaMalloc d_c");
-
-    check_cuda(cudaMemcpy(d_a, a.data(), bytes, cudaMemcpyHostToDevice),
-               "cudaMemcpy a->d_a");
-    check_cuda(cudaMemcpy(d_b, b.data(), bytes, cudaMemcpyHostToDevice),
-               "cudaMemcpy b->d_b");
+    checkCuda(cudaMemcpy(d_a.get(), a.data(), bytes, cudaMemcpyHostToDevice),
+              "cudaMemcpy a->d_a");
+    checkCuda(cudaMemcpy(d_b.get(), b.data(), bytes, cudaMemcpyHostToDevice),
+              "cudaMemcpy b->d_b");
 
     const dim3 block(BLOCK_THREADS);
     const dim3 grid((n + TILE - 1) / TILE, (n + TILE - 1) / TILE);
 
-    matmul_cub_kernel<<<grid, block>>>(d_a, d_b, d_c, n);
-    check_cuda(cudaGetLastError(), "launch matmul_cub_kernel");
-    check_cuda(cudaDeviceSynchronize(), "sync matmul_cub_kernel");
+    matmul_cub_kernel<<<grid, block>>>(d_a.get(), d_b.get(), d_c.get(), n);
+    checkCuda(cudaGetLastError(), "launch matmul_cub_kernel");
+    checkCuda(cudaDeviceSynchronize(), "sync matmul_cub_kernel");
 
-    check_cuda(cudaMemcpy(c.data(), d_c, bytes, cudaMemcpyDeviceToHost),
-               "cudaMemcpy d_c->c");
-
-    cudaFree(d_a);
-    cudaFree(d_b);
-    cudaFree(d_c);
+    checkCuda(cudaMemcpy(c.data(), d_c.get(), bytes, cudaMemcpyDeviceToHost),
+              "cudaMemcpy d_c->c");
   }
 };
 

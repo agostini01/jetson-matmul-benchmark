@@ -1,36 +1,14 @@
 #include "matmul/implementation.hpp"
+#include "utils/utils.h"
 
 #include <cuda_runtime.h>
 
 #include <memory>
-#include <stdexcept>
-#include <string>
 
+using namespace utils;
 namespace matmul {
 
 namespace {
-
-inline void check_cuda(cudaError_t status, const char *context) {
-  if (status != cudaSuccess) {
-    throw std::runtime_error(std::string(context) + ": " +
-                             cudaGetErrorString(status));
-  }
-}
-
-template <typename T> std::shared_ptr<T> make_cuda_shared(size_t count) {
-  T *raw_ptr = nullptr;
-
-  // 1. Perform the allocation and check it immediately
-  check_cuda(cudaMalloc(&raw_ptr, count * sizeof(T)),
-             "Failed to allocate device memory");
-
-  // 2. Wrap it in a shared_ptr with the custom deleter
-  return std::shared_ptr<T>(raw_ptr, [](T *p) {
-    if (p) {
-      cudaFree(p);
-    }
-  });
-}
 
 __global__ void matmul_naive_kernel(const float *a, const float *b, float *c,
                                     int n) {
@@ -59,23 +37,23 @@ public:
     const std::size_t bytes = static_cast<std::size_t>(n) *
                               static_cast<std::size_t>(n) * sizeof(float);
 
-    std::shared_ptr<float> d_a = make_cuda_shared<float>(n * n);
-    std::shared_ptr<float> d_b = make_cuda_shared<float>(n * n);
-    std::shared_ptr<float> d_c = make_cuda_shared<float>(n * n);
+    std::shared_ptr<float> d_a = makeCudaShared<float>(n * n);
+    std::shared_ptr<float> d_b = makeCudaShared<float>(n * n);
+    std::shared_ptr<float> d_c = makeCudaShared<float>(n * n);
 
-    check_cuda(cudaMemcpy(d_a.get(), a.data(), bytes, cudaMemcpyHostToDevice),
-               "cudaMemcpy a->d_a");
-    check_cuda(cudaMemcpy(d_b.get(), b.data(), bytes, cudaMemcpyHostToDevice),
-               "cudaMemcpy b->d_b");
+    checkCuda(cudaMemcpy(d_a.get(), a.data(), bytes, cudaMemcpyHostToDevice),
+              "cudaMemcpy a->d_a");
+    checkCuda(cudaMemcpy(d_b.get(), b.data(), bytes, cudaMemcpyHostToDevice),
+              "cudaMemcpy b->d_b");
 
     const dim3 block(16, 16);
     const dim3 grid((n + block.x - 1) / block.x, (n + block.y - 1) / block.y);
     matmul_naive_kernel<<<grid, block>>>(d_a.get(), d_b.get(), d_c.get(), n);
-    check_cuda(cudaGetLastError(), "launch matmul_naive_kernel");
-    check_cuda(cudaDeviceSynchronize(), "sync matmul_naive_kernel");
+    checkCuda(cudaGetLastError(), "launch matmul_naive_kernel");
+    checkCuda(cudaDeviceSynchronize(), "sync matmul_naive_kernel");
 
-    check_cuda(cudaMemcpy(c.data(), d_c.get(), bytes, cudaMemcpyDeviceToHost),
-               "cudaMemcpy d_c->c");
+    checkCuda(cudaMemcpy(c.data(), d_c.get(), bytes, cudaMemcpyDeviceToHost),
+              "cudaMemcpy d_c->c");
   }
 };
 
