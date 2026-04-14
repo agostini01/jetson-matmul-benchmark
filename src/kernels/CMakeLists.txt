@@ -1,1 +1,5 @@
 add_subdirectory(MatMul)
+add_subdirectory(Histogram)
+add_subdirectory(MatrixVecMul)
+add_subdirectory(ParallelReduction)
+add_subdirectory(VectorAdd)
