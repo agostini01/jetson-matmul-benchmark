@@ -12,6 +12,12 @@ std::vector<std::unique_ptr<MatmulImplementation>> make_all_implementations() {
   implementations.push_back(make_gpu_naive());
   // implementations.push_back(make_gpu_cub());
   implementations.push_back(make_gpu_tiled());
+  implementations.push_back(make_gpu_texture_1d_naive());
+  implementations.push_back(make_gpu_texture_1d_tiled());
+  implementations.push_back(make_gpu_texture_2d_naive());
+  implementations.push_back(make_gpu_texture_2d_tiled());
+  implementations.push_back(make_gpu_surface_2d_naive());
+  implementations.push_back(make_gpu_surface_2d_tiled());
   implementations.push_back(make_gpu_cublas());
   return implementations;
 }

@@ -5,6 +5,12 @@ set(MATMUL_SOURCES
     gpu_tiled.cu
     gpu_cub.cu
     gpu_cublas.cu
+    gpu_texture_1d_naive.cu
+    gpu_texture_1d_tiled.cu
+    gpu_texture_2d_tiled.cu
+    gpu_texture_2d_naive.cu
+    gpu_surface_2d_naive.cu
+    gpu_surface_2d_tiled.cu
     registry.cpp
 )
 
