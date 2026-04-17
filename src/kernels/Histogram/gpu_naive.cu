@@ -5,64 +5,51 @@
 #include <utility>
 
 using namespace utils;
-namespace parreduction {
+namespace histogram {
 
 namespace {
 
-__global__ void reduce_sum_naive_kernel(const float *in, float *out, int n) {
-  extern __shared__ float s[];
-  int tid = threadIdx.x;
-  int i = blockIdx.x * blockDim.x * 2 + threadIdx.x;
+// Histogram Size - 256 for all possible char values
+constexpr int HS = 256;
 
-  float x = 0.0f;
-  if (i < n) {
-    x += in[i];
-  }
-  if (i + blockDim.x < n) {
-    x += in[i + blockDim.x];
-  }
-  s[tid] = x;
+__global__ void histogram_naive_kernel(const char *data, int *hist, int n) {
+  __shared__ int local_hist[HS];
+  const int t = threadIdx.x;
+
+  // Reset local histogram
+  for (int i = t; i < HS; i += blockDim.x)
+    local_hist[i] = 0;
   __syncthreads();
 
-  for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-    if (tid < stride) {
-      s[tid] += s[tid + stride];
-    }
-    __syncthreads();
-  }
-  if (tid == 0) {
-    out[blockIdx.x] = s[0];
-  }
+  // Collect local histogram
+  const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if (tid < n)
+    atomicAdd(&local_hist[data[tid]], 1);
+  __syncthreads();
+
+  // Merge local histograms into global histogram
+  for (int i = t; i < HS; i += blockDim.x)
+    atomicAdd(&hist[i], local_hist[i]);
 }
 
 } // namespace
 
-float driver(float *in, int n) {
+void driver(const char *data, int *hist, int n) {
+  std::shared_ptr<char> d_data = makeCudaShared<char>(n);
+  std::shared_ptr<int> d_hist = makeCudaShared<int>(HS);
+  checkCuda(
+      cudaMemcpy(d_data.get(), data, n * sizeof(char), cudaMemcpyHostToDevice),
+      "Failed to copy data to device");
+  checkCuda(cudaMemset(d_hist.get(), 0, HS * sizeof(int)),
+            "Failed to initialize histogram on device");
+
   const int block = 256;
-  int curr_n = n;
-  std::shared_ptr<float> d_in = makeCudaShared<float>(n);
+  const int grid = (n + block - 1) / block;
+  histogram_naive_kernel<<<grid, block>>>(d_data.get(), d_hist.get(), n);
+  checkCuda(cudaGetLastError(), "Kernel launch failed");
 
   checkCuda(
-      cudaMemcpy(d_in.get(), in, sizeof(float) * n, cudaMemcpyHostToDevice),
-      "in to device copy");
-
-  while (curr_n > 1) {
-    int grid = (curr_n + block * 2 - 1) / (block * 2);
-    std::shared_ptr<float> d_out = makeCudaShared<float>(grid);
-    reduce_sum_naive_kernel<<<grid, block, block * sizeof(float)>>>(
-        d_in.get(), d_out.get(), curr_n);
-    checkCuda(cudaGetLastError(), "launch reduce_sum_naive_kernel");
-    checkCuda(cudaDeviceSynchronize(), "sync reduce_sum_naive_kernel");
-
-    // Swap input and output for next iteration
-    std::swap(d_in, d_out);
-    curr_n = grid;
-  }
-
-  float result = 0.0f;
-  checkCuda(
-      cudaMemcpy(&result, d_in.get(), sizeof(float), cudaMemcpyDeviceToHost),
-      "result to host copy");
-  return result;
+      cudaMemcpy(hist, d_hist.get(), HS * sizeof(int), cudaMemcpyDeviceToHost),
+      "Failed to copy histogram from device");
 }
-} // namespace parreduction
+} // namespace histogram
