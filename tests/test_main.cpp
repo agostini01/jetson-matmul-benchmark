@@ -18,11 +18,20 @@ std::size_t parse_size_arg(int argc, char **argv, std::size_t default_size) {
   return default_size;
 }
 
+float tolerance_for_implementation(const std::string &name) {
+  if (name == "gpu_tensorcore_bf16_cuda") {
+    return 5e-2f;
+  }
+  if (name == "gpu_tensorcore_tf32_cuda") {
+    return 5e-3f;
+  }
+  return 1e-3f;
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
   const std::size_t size = parse_size_arg(argc, argv, 128);
-  constexpr float tolerance = 1e-3f;
   constexpr unsigned int seed = 1234;
 
   auto implementations = matmul::make_all_implementations();
@@ -49,6 +58,8 @@ int main(int argc, char **argv) {
 
   std::cout << "Validation size: " << size << "x" << size << std::endl;
   for (const auto &impl : implementations) {
+    const float tolerance =
+        tolerance_for_implementation(std::string(impl->name()));
     auto result = validator.validate_against_reference(*impl, *reference, size,
                                                        tolerance, seed);
     std::cout << "[" << (result.ok ? "PASS" : "FAIL") << "] "

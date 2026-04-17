@@ -11,6 +11,8 @@ set(MATMUL_SOURCES
     gpu_texture_2d_naive.cu
     gpu_surface_2d_naive.cu
     gpu_surface_2d_tiled.cu
+    gpu_tensorcore_bf16.cu
+    gpu_tensorcore_tf32.cu
     registry.cpp
 )
 

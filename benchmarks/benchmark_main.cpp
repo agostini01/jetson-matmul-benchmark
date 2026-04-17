@@ -40,6 +40,16 @@ std::string parse_string_flag(int argc, char **argv, const std::string &name,
   return default_value;
 }
 
+float tolerance_for_implementation(const std::string &name) {
+  if (name == "gpu_tensorcore_bf16_cuda") {
+    return 5e-2f;
+  }
+  if (name == "gpu_tensorcore_tf32_cuda") {
+    return 5e-3f;
+  }
+  return 1e-3f;
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -87,7 +97,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  matmul::BenchmarkRunner runner(config);
   std::vector<matmul::BenchmarkResult> results;
   results.reserve(implementations.size());
 
@@ -113,6 +122,10 @@ int main(int argc, char **argv) {
       continue;
     }
 #endif
+    matmul::BenchmarkConfig config_for_impl = config;
+    config_for_impl.tolerance =
+        tolerance_for_implementation(std::string(impl->name()));
+    matmul::BenchmarkRunner runner(config_for_impl);
     matmul::BenchmarkResult result = runner.run(*impl, *reference);
     if (!result.validation_ok) {
       std::cerr << "[SKIP] " << result.implementation_name

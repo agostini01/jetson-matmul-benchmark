@@ -55,10 +55,10 @@ Development can be done inside the provided devcontainer, which is configured fo
 
 ## Build
 
-Configure and build:
+Configure and build for jetson orin nx:
 
 ```
-cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=87
 cmake --build build
 ```
 
