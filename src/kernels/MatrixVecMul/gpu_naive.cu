@@ -10,7 +10,7 @@ namespace matvecmul {
 
 namespace {
 
-__global__ void matvecmulKernel(const float *m, const float *v, float *o,
+__global__ void matvecmulKernel(const float *A, const float *v, float *o,
                                 int n) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -21,16 +21,45 @@ __global__ void matvecmulKernel(const float *m, const float *v, float *o,
   for (int row = tid; row < n; row += stride) {
     float sum = 0.0f;
     for (int j = 0; j < n; j++) {
-      sum += m[n * row + j] * v[j];
+      sum += A[n * row + j] * v[j];
     }
     o[row] = sum;
+  }
+}
+
+__global__ void matvec_tiled_kernel(const float *A, const float *v, float *o,
+                                    int N) {
+  extern __shared__ float sx[];
+
+  // Kernel computes a full dot product of N elements
+  // grid stride allows to go beyond max num threads
+  const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const int stride = gridDim.x * blockDim.x;
+
+  for (int row = tid; row < N; row += stride) {
+    float acc = 0.f;
+
+    for (int t = 0; t < (N + blockDim.x - 1) / blockDim.x; ++t) {
+      int j = t * blockDim.x + threadIdx.x;
+
+      sx[threadIdx.x] = (j < N) ? v[j] : 0.f;
+      __syncthreads();
+      for (int k = 0; k < blockDim.x; ++k) {
+        int col = t * blockDim.x * k;
+        if (col < N)
+          acc += A[row * N + col] * sx[k];
+      }
+      __syncthreads();
+    }
+
+    o[row] = acc;
   }
 }
 
 } // namespace
 
 // Create the driver function
-void matvecmul(const float *m, const float *v, float *o, int n) {
+void matvecmul(const float *A, const float *v, float *o, int n) {
   // Allocate device memory
   std::shared_ptr<float> d_m = makeCudaShared<float>(n * n);
   std::shared_ptr<float> d_v = makeCudaShared<float>(n);
@@ -38,7 +67,7 @@ void matvecmul(const float *m, const float *v, float *o, int n) {
 
   // Copy data to device
   checkCuda(
-      cudaMemcpy(d_m.get(), m, n * n * sizeof(float), cudaMemcpyHostToDevice),
+      cudaMemcpy(d_m.get(), A, n * n * sizeof(float), cudaMemcpyHostToDevice),
       "Failed to copy matrix to device");
   checkCuda(cudaMemcpy(d_v.get(), v, n * sizeof(float), cudaMemcpyHostToDevice),
             "Failed to copy vector to device");
